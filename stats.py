@@ -12,6 +12,35 @@ import googleapiclient.errors
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 
+
+
+class ytcounter:
+    def __init__(self):
+        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        api_service_name = "youtube"
+        api_version = "v3"
+        DEVELOPER_KEY =  os.environ.get('KEY')
+        client_secrets_file = os.environ.get('secret_file')
+
+        # Get credentials and create an API client
+        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+            client_secrets_file, scopes)
+        credentials = flow.run_console()
+        self.youtube = googleapiclient.discovery.build(
+            api_service_name, api_version, developerKey=DEVELOPER_KEY)
+        #   api_service_name, api_version, credentials=credentials)
+
+    def vid_view(self, vid_id: str) -> int:
+        request = self.youtube.videos().list(
+            part="statistics",
+            id=vid_id
+        )
+        response = request.execute()
+
+        print(response)
+        print(response['items'][0]['statistics'])
+        return response['items'][0]['statistics']['viewCount']
+
 def main():
     # Disable OAuthlib's HTTPS verification when running locally.
     # *DO NOT* leave this option enabled in production.
@@ -43,4 +72,9 @@ def main():
     print(response['items'][0]['statistics'])
 
 if __name__ == "__main__":
-    main()
+
+    yt = ytcounter()
+    print(yt.vid_view("kOHB85vDuow"))
+
+
+#    main()
