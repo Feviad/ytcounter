@@ -9,12 +9,20 @@ import os
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
+import time
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 
 
+def saver(vid_name: str,counter: str):
+    os.chdir('../confs')
+    csvfile = open('saver.csv', 'w')
+    t = time.localtime()
+    current_time = time.strftime("%H:%M:%S", t)
+    csvfile.write(vid_name + ';' + counter + ";" + current_time + '\n')
 
-class ytcounter:
+
+class yt_counter:
     def __init__(self):
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
         api_service_name = "youtube"
@@ -30,15 +38,14 @@ class ytcounter:
             api_service_name, api_version, developerKey=DEVELOPER_KEY)
         #   api_service_name, api_version, credentials=credentials)
 
-    def vid_view(self, vid_id: str) -> int:
+
+    def vid_view(self, vid_id: str) -> str:
         request = self.youtube.videos().list(
             part="statistics",
             id=vid_id
         )
         response = request.execute()
-
-        print(response)
-        print(response['items'][0]['statistics'])
+        #print(response)
         return response['items'][0]['statistics']['viewCount']
 
 def main():
@@ -73,8 +80,8 @@ def main():
 
 if __name__ == "__main__":
 
-    yt = ytcounter()
-    print(yt.vid_view("kOHB85vDuow"))
+    yt = yt_counter()
+    saver('Fancy', yt.vid_view("kOHB85vDuow"))
 
 
 #    main()
