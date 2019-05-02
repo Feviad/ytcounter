@@ -7,7 +7,7 @@
 import os
 import time
 
-import google_auth_oauthlib.flow
+#import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 
@@ -50,27 +50,66 @@ blackpink_MV_dict = {'Kill this love': '2S24-y0Ij3Y',
                      }
 
 
+class yt_counter:
+    def __init__(self):
+        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        api_service_name = "youtube"
+        api_version = "v3"
+        DEVELOPER_KEY = os.environ.get('KEY')
+
+        # client_secrets_file = os.environ.get('secret_file')
+        # Get credentials and create an API client
+        # flow = google_auth_oauthlib.flow.InstalledAppFlow.
+        #               from_client_secrets_file(client_secrets_file, scopes)
+        # credentials = flow.run_console()
+
+        self.youtube = googleapiclient.discovery.build(
+            api_service_name, api_version, developerKey=DEVELOPER_KEY)
+        #   api_service_name, api_version, credentials=credentials)
+
+    def vid_view(self, vid_id: str) -> str:
+        request = self.youtube.videos().list(
+            part="statistics",
+            id=vid_id
+        )
+        response = request.execute()
+        return response['items'][0]['statistics']['viewCount']
+
+    def vid_duration(self, vid_id: str) -> str:
+        request = self.youtube.videos().list(
+            part="contentDetails",
+            id=vid_id
+        )
+        response = request.execute()
+        timestamp = response['items'][0]['contentDetails']['duration']
+        try:
+            t = time.strptime(timestamp, 'PT%MM%SS')
+        except:
+            try:
+                t = time.strptime(timestamp, 'PT%MM')
+            except:
+                t = ''
+                print('WTF ' + timestamp)
+
+        return time.strftime("%H:%M:%S", t)
 
 
-def saver():
+def saver(yt: yt_counter):
     os.chdir('../confs')
-    wb = Excel.Workbooks.Open(
-        'C:\\Users\Arlas\PycharmProjects\Since\ytcounter\confs\\test.xlsx')
+    wb = Excel.Workbooks.Open(os.getcwd() + '\\test.xlsx')
     sheet = wb.ActiveSheet
 
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
     i = 3
-    while sheet.Cells(2,i).value:
+    while sheet.Cells(2, i).value:
         i = i+1
     sheet.Cells(2, i).value = current_time
-    yt = yt_counter()
     for mv_name in twice_MV_dict:
         c = sheet.Range('A3:A24').Find(mv_name, LookIn='xlValues')
         views = yt.vid_view(twice_MV_dict[mv_name])
         sheet.Cells(c.row, i).value = views
         print(mv_name + ' ' + str(c.row) + ' : ' + views)
-
 
     for mv_name in blackpink_MV_dict:
         c = sheet.Range('A27:A33').Find(mv_name, LookIn='xlValues')
@@ -85,16 +124,15 @@ def saver():
     Excel.Quit()
 
 
-def settler():
+def settler(yt: yt_counter):
     os.chdir('../confs')
 
-    wb = Excel.Workbooks.Open('C:\\Users\Arlas\PycharmProjects\Since\ytcounter\confs\\test.xlsx')
+    wb = Excel.Workbooks.Open(os.getcwd() + '\\test.xlsx')
     sheet = wb.ActiveSheet
-    mv = sheet.Cells(3,1).value
+    mv = sheet.Cells(3, 1).value
     print(mv)
     if not mv:
         i = 3
-        yt = yt_counter()
         for mv_name in twice_MV_dict:
             sheet.Cells(i, 1).value = mv_name
             mv_dur = yt.vid_duration(twice_MV_dict[mv_name])
@@ -114,95 +152,14 @@ def settler():
     # закрываем COM объект
     Excel.Quit()
 
-class yt_counter:
-    def __init__(self):
-        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-        api_service_name = "youtube"
-        api_version = "v3"
-        DEVELOPER_KEY =  os.environ.get('KEY')
-        client_secrets_file = os.environ.get('secret_file')
-
-        # Get credentials and create an API client
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secrets_file, scopes)
-        credentials = flow.run_console()
-        self.youtube = googleapiclient.discovery.build(
-            api_service_name, api_version, developerKey=DEVELOPER_KEY)
-        #   api_service_name, api_version, credentials=credentials)
-
-
-    def vid_view(self, vid_id: str) -> str:
-        request = self.youtube.videos().list(
-            part="statistics",
-            id=vid_id
-        )
-        response = request.execute()
-        #print(response)
-        return response['items'][0]['statistics']['viewCount']
-
-    def vid_duration(self, vid_id: str) -> str:
-        request = self.youtube.videos().list(
-            part="contentDetails",
-            id=vid_id
-        )
-        response = request.execute()
-        timestamp = response['items'][0]['contentDetails']['duration']
-        try:
-            t = time.strptime(timestamp, 'PT%MM%SS')
-        except:
-            try:
-                t = time.strptime(timestamp, 'PT%MM')
-            except:
-                t=''
-                print('WTF '+ timestamp)
-
-        return time.strftime("%H:%M:%S", t)
-
 
 def main():
-    # Disable OAuthlib's HTTPS verification when running locally.
-    # *DO NOT* leave this option enabled in production.
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+    yt = yt_counter()
+    settler(yt)
+    for i in range(3):
+        saver(yt)
+        time.sleep(3600)
 
-    api_service_name = "youtube"
-    api_version = "v3"
-
-    DEVELOPER_KEY = "AIzaSyCoFZPZeFMAoFjlsBo5S2ICVKR30jWQxiQ"
-
-    client_secrets_file = "C:\\Users\Arlas\PycharmProjects\Since\ytcounter\confs\client_secret_71806463033-vkd567f7oct0vvm0vtf67lifc6o9oe60.apps.googleusercontent.com.json"
-
-    # Get credentials and create an API client
-    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-        client_secrets_file, scopes)
-    credentials = flow.run_console()
-    youtube = googleapiclient.discovery.build(
-        api_service_name, api_version, developerKey=DEVELOPER_KEY)
-    #   api_service_name, api_version, credentials=credentials)
-
-    request = youtube.channels().list(
-        part="statistics",
-#        forUsername="TWICE"
-        id="UCzgxx_DM2Dcb9Y1spb9mUJA"
-    )
-    response = request.execute()
-
-    print(response)
-    print(response['items'][0]['statistics'])
 
 if __name__ == "__main__":
-
-    settler()
-    saver()
-
-    #yt = yt_counter()
-    # for mv_name in twice_MV_dict:
-    #     saver(mv_name, yt.vid_view(twice_MV_dict[mv_name]))
-    # time.sleep(3600)
-    # for mv_name in twice_MV_dict:
-    #     saver(mv_name, yt.vid_view(twice_MV_dict[mv_name]))
-
-    # saver('Fancy', yt.vid_view("kOHB85vDuow"))
-   # saver('Fancy', 'sdsdsd')
-
-
-#    main()
+    main()
